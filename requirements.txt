@@ -1,0 +1,26 @@
+# AFIR-TI Dashboard - Requirements
+# Core Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# ML & AI
+scikit-learn==1.3.2
+numpy==1.26.2
+pandas==2.1.4
+tensorflow==2.15.0
+shap==0.43.0
+anthropic==0.8.0
+
+# System & Security
+psutil==5.9.7
+requests==2.31.0
+python-nmap==0.7.1
+
+# Reporting
+reportlab==4.0.7
+
+# Data Processing
+python-dateutil==2.8.2
+
+# Utilities
+python-dotenv==1.0.0
