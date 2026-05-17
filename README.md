@@ -1,127 +1,193 @@
 # 🛡️ AFIR-TI Dashboard
 ### Autonomous Firewall Incident Response & Threat Intelligence
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Kali Linux](https://img.shields.io/badge/Kali-Linux-557C94?logo=kali-linux&logoColor=white)](https://www.kali.org/)
+<div align="center">
 
-**AFIR-TI** is a next-generation, AI-powered Security Operations Center (SOC) dashboard designed for Kali Linux. It combines real-time threat detection, SIEM capabilities, and advanced AI analytics to provide autonomous incident response.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-green.svg)
+![Kali Linux](https://img.shields.io/badge/Kali-Linux-red.svg)
+![Flask](https://img.shields.io/badge/flask-2.0%2B-lightgrey.svg)
+![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)
 
-![Dashboard Preview](https://via.placeholder.com/800x450/0d1117/3fb950?text=AFIR-TI+Dashboard+Preview)
+**Next-Generation SIEM with AI-Powered Threat Detection & Automated Response**
 
-## ✨ Key Features
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [API Reference](#-api-reference)
 
-### 🧠 AI-Powered Intelligence
-- **SHAP Explainability**: Understand *why* an IP was blocked with detailed feature contribution charts.
-- **AI Chat Assistant**: Ask natural language questions about your security data (e.g., "What is the most dangerous IP today?").
-- **Attack Prediction**: LSTM-based forecasting to predict the next likely attack vector.
-- **Auto-Tuning Thresholds**: Self-adjusting detection limits based on false positive rates.
+</div>
 
-### 🛡️ SIEM & Correlation
-- **Event Correlation**: Link events from the same IP across multiple sources within 60s windows.
-- **Baseline Deviation**: Detect anomalies by learning normal behavior patterns for every IP.
-- **Case Management**: Full Kanban-style workflow for tracking incidents from "Open" to "Resolved".
-- **UEBA**: User and Entity Behavior Analytics with risk scoring (0-100).
+---
 
-### 🌐 Threat Intelligence
-- **MITRE ATT&CK Mapping**: Visual matrix of detected tactics and techniques.
-- **Threat Feed Integration**: Auto-check IPs against global blocklists (e.g., Feodo Tracker).
-- **Asset Inventory**: Track criticality and ownership of network assets.
-- **Playbook Automation**: Automated response actions for brute-force, port scans, and critical threats.
+## 🚀 Overview
 
-### 📊 Visualization & Reporting
-- **Real-time Heatmaps**: GitHub-style contribution graphs for attack intensity.
-- **Compliance Reporting**: Generate PDF reports for ISO27001 and basic standards.
-- **Interactive Timeline**: Reconstruct attacks step-by-step.
-- **Dark Mode UI**: Professional, eye-friendly interface built with Chart.js.
+AFIR-TI is an advanced, AI-powered Security Information and Event Management (SIEM) system designed for Kali Linux. It combines machine learning, behavioral analytics, and automated response capabilities to provide real-time threat detection, investigation, and remediation.
 
-## 🚀 Quick Start
+### 🔥 Key Highlights
+- **🤖 AI-Powered**: SHAP explainability, LLM chat assistant, attack prediction
+- **🧠 Advanced ML**: LSTM + Isolation Forest + Rule Engine hybrid detection
+- **📊 Real-time Visualization**: Interactive dashboards with Chart.js
+- **⚡ Automated Response**: Playbook-based auto-remediation
+- **🎯 MITRE ATT&CK**: Full tactic & technique mapping
+- **🔍 Threat Hunting**: Advanced query interface for manual investigation
+- **📋 Case Management**: Professional incident tracking workflow
+- **🌐 UEBA**: User & Entity Behavior Analytics with risk scoring
+
+---
+
+## ✨ Features
+
+### 🧠 AI-Powered Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **🔍 SHAP Explainability** | Every ML decision comes with feature-level explanations |
+| **💬 AI Chat Assistant** | Natural language Q&A about your security data (Arabic/English) |
+| **🔮 Attack Prediction** | Predict next attack steps using LSTM forecasting |
+| **📝 Auto-Narratives** | Convert technical events into human-readable summaries |
+| **🎛️ Adaptive Thresholds** | Self-tuning detection thresholds based on FP/FN rates |
+
+### 🛡️ SIEM Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **🔗 Event Correlation** | Link related events across sources within 60s windows |
+| **📏 Baseline Detection** | Learn normal behavior & detect anomalies automatically |
+| **📁 Case Management** | Kanban-style incident tracking with notes & resolution |
+| **👤 UEBA Profiles** | Risk scores (0-100) for every IP with behavior tags |
+| **⚙️ Playbook Automation** | Auto-respond to brute force, port scans, critical threats |
+| **🎯 Threat Hunting** | Advanced query builder for historical data exploration |
+| **🖥️ Asset Inventory** | Track devices, owners, criticality levels |
+| **📊 Compliance Reports** | ISO 27001 ready reports with PDF export |
+| **⏱️ Incident Timeline** | Reconstruct attacks step-by-step with phase markers |
+| **🌍 Threat Feed Integration** | Cross-reference with Feodo Tracker & other feeds |
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
-- **OS**: Kali Linux (Recommended) or any Debian-based distro with root access.
-- **Python**: 3.8 or higher.
-- **Root Access**: Required for `iptables` integration.
+```bash
+# Kali Linux (recommended) or any Debian-based system
+# Python 3.8+
+# Root/sudo access for iptables integration
+```
 
 ### Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/samiirsaad/afir-ti-dashboard.git
-   cd afir-ti-dashboard
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/samiirsaad/afir-ti-dashboard.git
+cd afir-ti-dashboard
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *Note: For full AI features, ensure `shap`, `anthropic`, and `reportlab` are installed.*
+# Install dependencies
+pip install -r requirements.txt
 
-3. **Configure API Keys (Optional)**:
-   Edit `opt/firewall_irt/config.json` to add your Anthropic API key for the Chat Assistant.
+# Optional: For full AI features
+pip install shap anthropic reportlab psutil
 
-4. **Run the Dashboard**:
-   ```bash
-   sudo python app.py
-   ```
+# Create required directories
+sudo mkdir -p /opt/firewall_irt
+sudo cp -r opt/firewall_irt/* /opt/firewall_irt/
 
-5. **Access the UI**:
-   Open your browser and navigate to `http://localhost:5000`.
+# Run the dashboard
+python app.py
+```
 
-## 📂 Project Structure
+### Access Dashboard
+```
+http://localhost:5000
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 afir-ti-dashboard/
-├── app.py                  # Main Flask application & API endpoints
-├── templates/
-│   └── index.html          # Single-file React-less Dark Theme UI
-├── opt/firewall_irt/       # Data storage directory
-│   ├── events.json         # Detected threat events
-│   ├── blocked_ips.json    # Currently blocked IPs
-│   ├── config.json         # System configuration
-│   ├── cases.json          # Incident cases
-│   └── ...                 # Other data files
-├── engines/                # Core logic modules
-│   ├── correlation_engine.py
-│   ├── baseline_engine.py
-│   ├── chat_assistant.py
-│   ├── explainability_engine.py
-│   └── ...
-└── requirements.txt        # Python dependencies
+├── app.py                          # Main Flask application
+├── requirements.txt                # Python dependencies
+├── README.md                       # This file
+├── LICENSE                         # MIT License
+│
+├── engines/                        # Core detection engines (12 files)
+├── templates/                      # HTML dashboard
+├── opt/firewall_irt/               # Data directory
+├── .github/                        # GitHub templates & workflows
+└── docs/                           # Documentation
 ```
+
+---
 
 ## 🔌 API Endpoints
 
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/events` | GET | Retrieve all detected events with SHAP explanations |
-| `/api/chat` | POST | Send a natural language query to the AI assistant |
-| `/api/cases` | GET/POST | Manage incident cases |
-| `/api/predictions` | GET | Get AI-predicted future attacks |
-| `/api/mitre-stats` | GET | Retrieve MITRE ATT&CK statistics |
-| `/api/export/pdf` | GET | Generate a PDF security report |
-| `/api/hunt` | POST | Run custom threat hunting queries |
+### Core | SIEM | AI | Config | Export
+- `/api/events` - Get all events
+- `/api/blocked` - Get blocked IPs
+- `/api/correlated` - Correlated attacks
+- `/api/cases` - Incident cases
+- `/api/entities` - UEBA profiles
+- `/api/chat` - AI assistant
+- `/api/predictions` - Attack forecasts
+- `/api/explain/<id>` - SHAP explanations
+- `/api/config` - System configuration
+- `/api/export/csv` - CSV export
+- `/api/export/pdf` - PDF report
 
-*(Full API documentation available in the `docs/` folder)*
+*See [docs/API.md](docs/API.md) for complete reference*
+
+---
+
+## ⚙️ Configuration
+
+Edit `/opt/firewall_irt/config.json`:
+
+```json
+{
+  "failed_conn_threshold": 10,
+  "port_scan_threshold": 15,
+  "lstm_anomaly_score": 0.5,
+  "block_duration": 3600,
+  "ml_weight": 0.7,
+  "anthropic_key": "",
+  "adaptive_thresholds_enabled": true
+}
+```
+
+---
+
+## 🔒 Security Notes
+
+- **Root Access Required** for iptables integration
+- **Protect API Keys** in config.json
+- **Do not expose** to public networks without authentication
+- **Backup** `/opt/firewall_irt/` regularly
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-1. Fork the project.
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## 🙏 Acknowledgments
-
-- Built with [Flask](https://flask.palletsprojects.com/)
-- Visualization powered by [Chart.js](https://www.chartjs.org/)
-- AI capabilities via [Anthropic](https://www.anthropic.com/) & [SHAP](https://github.com/slundberg/shap)
-- Inspired by modern SOC workflows and MITRE ATT&CK framework.
+MIT License - see [LICENSE](LICENSE) file
 
 ---
-<p align="center">Made with ❤️ by <a href="https://github.com/samiirsaad">@samiirsaad</a></p>
+
+## 👨‍💻 Author
+
+**Samiir Saad**  
+GitHub: [@samiirsaad](https://github.com/samiirsaad)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the cybersecurity community**
+
+</div>
