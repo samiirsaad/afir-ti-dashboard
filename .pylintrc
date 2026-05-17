@@ -1,0 +1,26 @@
+[MASTER]
+extension-pkg-whitelist=numpy,scipy,sklearn,shap
+
+[MESSAGES CONTROL]
+# Disable specific checks that are too strict for this project
+disable=
+    missing-docstring,
+    invalid-name,
+    line-too-long,
+    too-many-locals,
+    too-many-statements,
+    too-few-public-methods,
+    import-error,
+    no-member,
+    too-many-instance-attributes,
+    too-many-arguments,
+    global-statement,
+    broad-except
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+min-public-methods=1
+max-args=10
+max-locals=20
