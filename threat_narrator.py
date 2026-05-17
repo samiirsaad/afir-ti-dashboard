@@ -5,6 +5,7 @@ Generates human-readable descriptions of threats
 
 import json
 import os
+import io
 from datetime import datetime, timedelta
 
 class ThreatNarrator:
