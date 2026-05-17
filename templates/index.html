@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFIR-TI Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg-primary: #0d1117; --bg-card: #161b22; --border: #30363d; --text-primary: #e6edf3; --text-secondary: #8b949e; --green: #3fb950; --red: #f85149; --amber: #d29922; --blue: #58a6ff; --purple: #a371f7; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+        .btn { padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); border-radius: 6px; cursor: pointer; }
+        .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; }
+        .badge-green { background: rgba(63,185,80,0.2); color: var(--green); }
+        .badge-red { background: rgba(248,81,73,0.2); color: var(--red); }
+        .badge-amber { background: rgba(210,153,34,0.2); color: var(--amber); }
+        .badge-blue { background: rgba(88,166,255,0.2); color: var(--blue); }
+        .badge-purple { background: rgba(163,113,247,0.2); color: var(--purple); }
+        .container { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .tab { padding: 0.75rem 1.5rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary); }
+        .tab.active { border-bottom-color: var(--blue); color: var(--text-primary); }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { font-weight: 600; color: var(--text-secondary); font-size: 0.75rem; }
+        .ip-link { color: var(--blue); cursor: pointer; text-decoration: underline; }
+        .sidebar { position: fixed; right: -450px; top: 0; width: 450px; height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border); z-index: 200; transition: right 0.3s; overflow-y: auto; }
+        .sidebar.open { right: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 150; display: none; }
+        .overlay.open { display: block; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; z-index: 250; max-width: 600px; width: 90%; display: none; }
+        .modal.open { display: block; }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; z-index: 300; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .chat-panel { position: fixed; right: -400px; bottom: 0; width: 400px; height: 500px; background: var(--bg-card); border-left: 1px solid var(--border); z-index: 200; transition: right 0.3s; display: flex; flex-direction: column; }
+        .chat-panel.open { right: 0; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; }
+        .chat-message { margin-bottom: 1rem; padding: 0.75rem; border-radius: 8px; }
+        .chat-user { background: var(--blue); color: #fff; margin-left: auto; }
+        .chat-ai { background: var(--bg-primary); border: 1px solid var(--border); }
+        .form-input { width: 100%; padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); margin-bottom: 0.5rem; }
+        .gauge-container { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+        .gauge-svg { transform: rotate(-90deg); }
+        .gauge-bg { fill: none; stroke: var(--border); stroke-width: 12; }
+        .gauge-fill { fill: none; stroke: var(--green); stroke-width: 12; stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 0.5s; }
+        .gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .kanban-column { background: var(--bg-primary); border-radius: 8px; padding: 1rem; }
+        .kanban-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem; cursor: pointer; }
+        .progress-bar { height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--green); }
+        .mitre-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+        .mitre-cell { padding: 0.5rem; border-radius: 4px; cursor: pointer; text-align: center; min-height: 60px; }
+        .heatmap-0 { background: #ebedf0; }
+        .heatmap-1 { background: #9be9a8; }
+        .heatmap-2 { background: #40c463; }
+        .heatmap-3 { background: #30a14e; }
+        .heatmap-4 { background: #216e39; }
+        .heatmap-grid { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; }
+        .heatmap-cell { aspect-ratio: 1; border-radius: 2px; }
+        .log-viewer { font-family: monospace; font-size: 0.8rem; background: var(--bg-primary); padding: 1rem; border-radius: 4px; max-height: 500px; overflow-y: auto; }
+        .log-line { padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+        .log-line.error { color: var(--red); }
+        .log-line.warning { color: var(--amber); }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div>
+    <header class="header">
+        <h1>🛡️ AFIR-TI Dashboard</h1>
+        <div style="display:flex;gap:0.5rem">
+            <button class="btn" onclick="togglePanel('settings')">⚙️ Settings</button>
+            <button class="btn" onclick="openLogs()">📋 Logs</button>
+            <button class="btn" onclick="openAlerts()">🔔 Alerts <span class="badge badge-red" id="alertBadge">0</span></button>
+            <button class="btn" onclick="exportCSV()">📥 CSV</button>
+            <button class="btn" onclick="exportPDF()">📄 PDF</button>
+            <button class="btn btn-primary" onclick="toggleChat()">💬 AI Chat</button>
+        </div>
+    </header>
+    <div class="container">
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <span>Threat Level</span>
+                <span class="badge" id="threatLevelBadge">LOW</span>
+            </div>
+            <div class="gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 150 150"><circle class="gauge-bg" cx="75" cy="75" r="70"/><circle class="gauge-fill" id="gaugeFill" cx="75" cy="75" r="70"/></svg>
+                <div class="gauge-center"><div class="gauge-value" id="gaugeValue">0.00</div><div>Avg Score</div></div>
+            </div>
+        </div>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('events')">Events</div>
+            <div class="tab" onclick="switchTab('correlated')">Correlated <span class="badge badge-purple" id="correlatedBadge">0</span></div>
+            <div class="tab" onclick="switchTab('cases')">Cases <span class="badge badge-blue" id="casesBadge">0</span></div>
+            <div class="tab" onclick="switchTab('entities')">Entities</div>
+            <div class="tab" onclick="switchTab('assets')">Assets</div>
+            <div class="tab" onclick="switchTab('hunt')">Threat Hunt</div>
+            <div class="tab" onclick="switchTab('stats')">Statistics</div>
+        </div>
+        <div class="panel active" id="eventsPanel">
+            <div class="card"><table><thead><tr><th>Time</th><th>Source IP</th><th>Dest IP</th><th>Score</th><th>MITRE</th><th>Tactic</th><th>Reason</th><th>Actions</th></tr></thead><tbody id="eventsTable"></tbody></table></div>
+            <div class="card"><canvas id="timelineChart" height="80"></canvas></div>
+            <div class="card"><div class="mitre-grid" id="mitreGrid"></div></div>
+            <div class="card"><div id="heatmapContainer"></div></div>
+        </div>
+        <div class="panel" id="correlatedPanel"><div class="card"><table><thead><tr><th>Timestamp</th><th>IP</th><th>Type</th><th>Count</th><th>Score</th></tr></thead><tbody id="correlatedTable"></tbody></table></div></div>
+        <div class="panel" id="casesPanel"><div class="kanban-board" id="kanbanBoard"></div></div>
+        <div class="panel" id="entitiesPanel"><div class="card"><table><thead><tr><th>IP</th><th>Risk Score</th><th>Trust Level</th><th>Tags</th><th>Last Seen</th></tr></thead><tbody id="entitiesTable"></tbody></table></div></div>
+        <div class="panel" id="assetsPanel"><div class="card"><button class="btn btn-primary" onclick="showAddAssetModal()">+ Add Asset</button><table style="margin-top:1rem"><thead><tr><th>IP</th><th>Hostname</th><th>Owner</th><th>Type</th><th>Criticality</th><th>Actions</th></tr></thead><tbody id="assetsTable"></tbody></table></div></div>
+        <div class="panel" id="huntPanel"><div class="card"><div id="filtersContainer"></div><button class="btn btn-primary" onclick="addFilterRow()">+ Add Filter</button><select class="form-input" id="timeRange" style="width:auto;margin-top:1rem"><option value="24h">24h</option><option value="7d">7d</option><option value="all">All</option></select><button class="btn btn-primary" onclick="runHunt()">🔍 Hunt</button><div id="huntResults" style="margin-top:1rem"></div></div></div>
+        <div class="panel" id="statsPanel"><div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem"><div class="card"><canvas id="scoreDistChart"></canvas></div><div class="card"><canvas id="tacticPieChart"></canvas></div></div></div>
+    </div>
+    <div class="sidebar" id="settingsSidebar"><div style="padding:1.5rem"><h3>Detection Thresholds</h3><label>Failed Conn: <input type="range" id="failedConnSlider" min="1" max="1000" value="10"><span id="failedConnVal">10</span></label><br><label>Port Scan: <input type="range" id="portScanSlider" min="1" max="500" value="50"><span id="portScanVal">50</span></label><br><label>Traffic: <input type="range" id="trafficSlider" min="1" max="100000" value="10000"><span id="trafficVal">10000</span></label><br><label>LSTM: <input type="range" id="lstmSlider" min="0.01" max="1" step="0.01" value="0.5"><span id="lstmVal">0.5</span></label><br><label>Block Duration: <input type="range" id="blockSlider" min="60" max="86400" value="3600"><span id="blockVal">3600</span></label><br><label>ML Weight: <input type="range" id="mlSlider" min="0.1" max="0.9" step="0.1" value="0.5"><span id="mlVal">0.5</span></label><br><button class="btn btn-primary" onclick="saveConfig()">Save</button><button class="btn" onclick="resetConfig()">Reset</button><hr style="margin:1rem 0;border-color:var(--border)"><h3>Whitelist</h3><input type="text" class="form-input" id="whitelistIp" placeholder="IP"><input type="text" class="form-input" id="whitelistNote" placeholder="Note"><button class="btn btn-primary" onclick="addToWhitelist()">Add</button><table id="whitelistTable" style="margin-top:1rem"><thead><tr><th>IP</th><th>Note</th><th>Actions</th></tr></thead><tbody></tbody></table><hr style="margin:1rem 0;border-color:var(--border)"><h3>Playbooks</h3><div id="playbooksList"></div><hr style="margin:1rem 0;border-color:var(--border)"><h3>Feeds</h3><div id="feedsList"></div><button class="btn" style="margin-top:1rem" onclick="closeSettings()">Close</button></div></div>
+    <div class="sidebar" id="ipDrawer"><div style="padding:1.5rem"><h2 id="ipDrawerTitle">IP Details</h2><div id="ipDrawerContent"></div><button class="btn" onclick="closeIpDrawer()" style="margin-top:1rem">Close</button></div></div>
+    <div class="chat-panel" id="chatPanel"><div style="padding:1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between"><span>💬 AI Assistant</span><button class="btn" onclick="toggleChat()">✕</button></div><div class="chat-messages" id="chatMessages"></div><div style="padding:0.5rem;display:flex;gap:0.5rem"><span class="badge badge-blue" style="cursor:pointer" onclick="sendChat('أخطر IP؟')">أخطر IP؟</span><span class="badge badge-blue" style="cursor:pointer" onclick="sendChat('الوضع العام؟')">الوضع العام؟</span></div><div style="padding:1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem"><input type="text" class="form-input" id="chatInput" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendChat()"><button class="btn btn-primary" onclick="sendChat()">Send</button></div></div>
+    <div class="modal" id="logsModal"><div style="display:flex;justify-content:space-between;margin-bottom:1rem"><h3>📋 Logs</h3><button class="btn" onclick="closeLogs()">✕</button></div><select class="form-input" id="logFileSelect" onchange="loadLogs()"><option value="firewall_irt">Firewall</option><option value="suricata">Suricata</option></select><input type="text" class="form-input" placeholder="Search..." id="logSearch" onkeyup="filterLogs()"><div class="log-viewer" id="logViewer"></div></div>
+    <div class="modal" id="alertsModal"><div style="display:flex;justify-content:space-between;margin-bottom:1rem"><h3>🔔 Alerts</h3><button class="btn" onclick="closeAlerts()">✕</button></div><table id="alertsTable"><thead><tr><th>Time</th><th>Severity</th><th>IP</th><th>Message</th></tr></thead><tbody></tbody></table></div>
+    <div class="modal" id="assetModal"><div style="display:flex;justify-content:space-between;margin-bottom:1rem"><h3>Add/Edit Asset</h3><button class="btn" onclick="closeAssetModal()">✕</button></div><input type="hidden" id="assetIpEdit"><label>IP<input type="text" class="form-input" id="assetIp"></label><label>Hostname<input type="text" class="form-input" id="assetHostname"></label><label>Owner<input type="text" class="form-input" id="assetOwner"></label><label>Type<select class="form-input" id="assetType"><option value="server">Server</option><option value="workstation">Workstation</option></select></label><label>Criticality<select class="form-input" id="assetCriticality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label><button class="btn btn-primary" onclick="saveAsset()">Save</button></div>
+    <div class="modal" id="explainModal"><div style="display:flex;justify-content:space-between;margin-bottom:1rem"><h3>🔍 Explanation</h3><button class="btn" onclick="closeExplain()">✕</button></div><div id="explainContent"></div></div>
+    <div class="modal" id="caseModal"><div style="display:flex;justify-content:space-between;margin-bottom:1rem"><h3>Case Details</h3><button class="btn" onclick="closeCaseModal()">✕</button></div><div id="caseDetailContent"></div></div>
+    <div class="toast" id="toast"></div>
+    <script>
+        // Global state
+        let events = [], entities = [], assets = [], cases = [], playbooks = {};
+        let currentTab = 'events';
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEvents();
+            loadEntities();
+            loadAssets();
+            loadCases();
+            loadConfig();
+            loadPlaybooks();
+            loadFeeds();
+            loadStats();
+            setInterval(loadThreatLevel, 10000);
+            setInterval(loadEvents, 30000);
+        });
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Panel').classList.add('active');
+            if (tab === 'correlated') loadCorrelated();
+            if (tab === 'cases') loadCases();
+            if (tab === 'entities') loadEntities();
+            if (tab === 'assets') loadAssets();
+            if (tab === 'stats') loadStats();
+        }
+
+        // Load functions
+        async function loadEvents() {
+            try {
+                const res = await fetch('/api/events');
+                events = await res.json();
+                renderEventsTable();
+                updateBadges();
+            } catch (e) { showToast('Error loading events: ' + e.message, 'error'); }
+        }
+
+        async function loadCorrelated() {
+            try {
+                const res = await fetch('/api/correlated');
+                const data = await res.json();
+                const tbody = document.getElementById('correlatedTable');
+                tbody.innerHTML = data.map(c => `<tr><td>${c.timestamp}</td><td class="ip-link">${c.ip}</td><td>${c.correlation_type}</td><td>${c.event_count}</td><td>${c.combined_score.toFixed(2)}</td></tr>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadCases() {
+            try {
+                const res = await fetch('/api/cases?status=all');
+                cases = await res.json();
+                renderKanban();
+                updateBadges();
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadEntities() {
+            try {
+                const res = await fetch('/api/entities');
+                entities = await res.json();
+                const tbody = document.getElementById('entitiesTable');
+                tbody.innerHTML = entities.map(e => `
+                    <tr>
+                        <td class="ip-link" onclick="showIpHistory('${e.ip}')">${e.ip}</td>
+                        <td><div class="progress-bar"><div class="progress-fill" style="width:${e.risk_score}%;background:${getRiskColor(e.risk_score)}"></div></div></td>
+                        <td><span class="badge ${getTrustBadge(e.trust_level)}">${e.trust_level}</span></td>
+                        <td>${e.behavior_tags.map(t => `<span class="badge badge-blue">${t}</span>`).join(' ')}</td>
+                        <td>${e.last_seen}</td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAssets() {
+            try {
+                const res = await fetch('/api/assets');
+                assets = await res.json();
+                const tbody = document.getElementById('assetsTable');
+                tbody.innerHTML = assets.map(a => `
+                    <tr>
+                        <td>${a.ip}</td>
+                        <td>${a.hostname || '-'}</td>
+                        <td>${a.owner || '-'}</td>
+                        <td>${a.asset_type}</td>
+                        <td><span class="badge ${getCriticalityBadge(a.criticality)}">${a.criticality}</span></td>
+                        <td><button class="btn" onclick="editAsset('${a.ip}')">Edit</button> <button class="btn" onclick="deleteAsset('${a.ip}')" style="color:var(--red)">Delete</button></td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const stats = await res.json();
+                renderScoreDist(stats.score_distribution);
+                renderTacticPie(stats.top_techniques);
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadThreatLevel() {
+            try {
+                const res = await fetch('/api/threat-level');
+                const data = await res.json();
+                document.getElementById('threatLevelBadge').textContent = data.level;
+                document.getElementById('threatLevelBadge').className = `badge ${getLevelBadge(data.level)}`;
+                document.getElementById('gaugeValue').textContent = data.avg_score.toFixed(2);
+                const gaugeFill = document.getElementById('gaugeFill');
+                gaugeFill.style.stroke = data.color;
+                const offset = 440 - (440 * (data.avg_score / 1));
+                gaugeFill.style.strokeDashoffset = offset;
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                document.getElementById('failedConnSlider').value = config.failed_conn_threshold;
+                document.getElementById('failedConnVal').textContent = config.failed_conn_threshold;
+                document.getElementById('portScanSlider').value = config.port_scan_threshold;
+                document.getElementById('portScanVal').textContent = config.port_scan_threshold;
+                document.getElementById('trafficSlider').value = config.traffic_volume_threshold;
+                document.getElementById('trafficVal').textContent = config.traffic_volume_threshold;
+                document.getElementById('lstmSlider').value = config.lstm_anomaly_score;
+                document.getElementById('lstmVal').textContent = config.lstm_anomaly_score;
+                document.getElementById('blockSlider').value = config.block_duration;
+                document.getElementById('blockVal').textContent = config.block_duration;
+                document.getElementById('mlSlider').value = config.ml_weight;
+                document.getElementById('mlVal').textContent = config.ml_weight;
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadPlaybooks() {
+            try {
+                const res = await fetch('/api/playbooks');
+                playbooks = await res.json();
+                const div = document.getElementById('playbooksList');
+                div.innerHTML = Object.entries(playbooks).map(([name, pb]) => `
+                    <div style="margin-bottom:1rem;padding:0.5rem;border:1px solid var(--border);border-radius:4px">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <strong>${pb.name}</strong>
+                            <label><input type="checkbox" ${pb.enabled ? 'checked' : ''} onchange="togglePlaybook('${name}')"> Enabled</label>
+                        </div>
+                        <small style="color:var(--text-secondary)">${pb.description}</small>
+                        <div style="margin-top:0.5rem"><small>Trigger: ${JSON.stringify(pb.trigger)}</small></div>
+                        <div><small>Actions: ${pb.actions.join(', ')}</small></div>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadFeeds() {
+            try {
+                const res = await fetch('/api/feeds/status');
+                const feeds = await res.json();
+                const div = document.getElementById('feedsList');
+                div.innerHTML = Object.entries(feeds).map(([name, feed]) => `
+                    <div style="margin-bottom:0.5rem">
+                        <strong>${feed.name}</strong> - ${feed.ip_count} IPs
+                        <br><small style="color:var(--text-secondary)">Last update: ${feed.last_update || 'Never'}</small>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadWhitelist() {
+            try {
+                const res = await fetch('/api/whitelist');
+                const data = await res.json();
+                const tbody = document.querySelector('#whitelistTable tbody');
+                tbody.innerHTML = data.whitelist_ips.map(w => `
+                    <tr><td>${w.ip}</td><td>${w.note || '-'}</td><td><button class="btn" onclick="removeFromWhitelist('${w.ip}')" style="color:var(--red)">Remove</button></td></tr>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        // Render functions
+        function renderEventsTable() {
+            const tbody = document.getElementById('eventsTable');
+            tbody.innerHTML = events.map(e => `
+                <tr style="${e.explanation ? 'border-left:3px solid var(--purple)' : ''}">
+                    <td>${e.timestamp}</td>
+                    <td class="ip-link" onclick="showIpHistory('${e.src_ip}')">${e.src_ip}</td>
+                    <td>${e.dest_ip}</td>
+                    <td><span class="badge ${getScoreBadge(e.hybrid_score)}">${e.hybrid_score.toFixed(2)}</span></td>
+                    <td>${e.mitre_technique_id || '-'}</td>
+                    <td>${e.mitre_tactic || '-'}</td>
+                    <td>${e.reason}</td>
+                    <td>
+                        <button class="btn" onclick="showExplain('${e.id}')">Why?</button>
+                        ${e.narrative ? `<span title="${e.narrative}" style="cursor:pointer">📖</span>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+            renderTimelineChart();
+            renderMitreGrid();
+            renderHeatmap();
+        }
+
+        function renderKanban() {
+            const board = document.getElementById('kanbanBoard');
+            const statuses = ['open', 'investigating', 'resolved', 'false_positive'];
+            board.innerHTML = statuses.map(status => `
+                <div class="kanban-column">
+                    <h4 style="text-transform:capitalize;margin-bottom:1rem">${status}</h4>
+                    ${cases.filter(c => c.status === status).map(c => `
+                        <div class="kanban-card" onclick="showCaseDetail('${c.id}')">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
+                                <span class="badge ${getSeverityBadge(c.severity)}">${c.severity}</span>
+                                <small>${c.created_at}</small>
+                            </div>
+                            <div style="font-weight:600">${c.src_ip}</div>
+                            <small style="color:var(--text-secondary)">${c.related_events?.length || 0} events</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        async function renderTimelineChart() {
+            try {
+                const res = await fetch('/api/timeline');
+                const data = await res.json();
+                const ctx = document.getElementById('timelineChart').getContext('2d');
+                if (window.timelineChart) window.timelineChart.destroy();
+                window.timelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.hour),
+                        datasets: [
+                            { label: 'Total', data: data.map(d => d.total), borderColor: '#58a6ff', tension: 0.3 },
+                            { label: 'Threats', data: data.map(d => d.threats), borderColor: '#f85149', tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: true } } }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function renderMitreGrid() {
+            fetch('/api/mitre-stats').then(r => r.json()).then(data => {
+                const grid = document.getElementById('mitreGrid');
+                const tactics = ['Reconnaissance', 'Initial Access', 'Execution', 'Credential Access', 'Discovery', 'Command and Control', 'Impact', 'Exfiltration'];
+                grid.innerHTML = tactics.map(tactic => {
+                    const items = data.filter(d => d.tactic === tactic);
+                    const count = items.reduce((sum, i) => sum + i.count, 0);
+                    const intensity = count > 10 ? 0.8 : count > 5 ? 0.5 : count > 0 ? 0.2 : 0;
+                    return `
+                        <div class="mitre-cell" style="background:rgba(248,81,73,${intensity})" onclick="filterByTactic('${tactic}')">
+                            <div style="font-size:0.7rem">${tactic}</div>
+                            ${items.map(i => `<div style="font-size:0.65rem">${i.technique_id}: ${i.count}</div>`).join('')}
+                        </div>
+                    `;
+                }).join('');
+            }).catch(e => console.error(e));
+        }
+
+        async function renderHeatmap() {
+            try {
+                const res = await fetch('/api/heatmap');
+                const data = await res.json();
+                const container = document.getElementById('heatmapContainer');
+                const days = Object.keys(data).sort();
+                container.innerHTML = `
+                    <div style="display:grid;grid-template-columns:50px repeat(24,1fr);gap:2px;margin-bottom:0.5rem">
+                        <div></div>
+                        ${Array.from({length: 24}, (_, i) => `<div style="text-align:center;font-size:0.6rem">${i}:00</div>`).join('')}
+                    </div>
+                    ${days.map(day => `
+                        <div style="display:grid;grid-template-columns:50px repeat(24,1fr);gap:2px;margin-bottom:2px">
+                            <div style="font-size:0.6rem">${day.slice(5)}</div>
+                            ${Array.from({length: 24}, (_, h) => {
+                                const val = data[day][h] || 0;
+                                const level = val > 30 ? 4 : val > 15 ? 3 : val > 5 ? 2 : val > 0 ? 1 : 0;
+                                return `<div class="heatmap-cell heatmap-${level}" title="${day} ${h}:00 - ${val} threats"></div>`;
+                            }).join('')}
+                        </div>
+                    `).join('')}
+                `;
+            } catch (e) { console.error(e); }
+        }
+
+        function renderScoreDist(dist) {
+            const ctx = document.getElementById('scoreDistChart').getContext('2d');
+            if (window.scoreDistChart) window.scoreDistChart.destroy();
+            window.scoreDistChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-0.2', '0.2-0.4', '0.4-0.6', '0.6-0.8', '0.8-1.0'],
+                    datasets: [{ label: 'Events', data: Object.values(dist), backgroundColor: ['#3fb950', '#9be9a8', '#d29922', '#f85149', '#a371f7'] }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderTacticPie(techniques) {
+            const ctx = document.getElementById('tacticPieChart').getContext('2d');
+            if (window.tacticPieChart) window.tacticPieChart.destroy();
+            window.tacticPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: techniques.map(t => t.technique),
+                    datasets: [{ data: techniques.map(t => t.count), backgroundColor: ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7'] }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        // IP History Drawer
+        async function showIpHistory(ip) {
+            try {
+                const res = await fetch(`/api/ip-history/${ip}`);
+                const data = await res.json();
+                document.getElementById('ipDrawerTitle').textContent = ip;
+                document.getElementById('ipDrawerContent').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+                        <div><strong>First Seen:</strong> ${data.first_seen}</div>
+                        <div><strong>Last Seen:</strong> ${data.last_seen}</div>
+                        <div><strong>Total Events:</strong> ${data.total_events}</div>
+                        <div><strong>Threat Events:</strong> ${data.threat_events}</div>
+                        <div><strong>Avg Score:</strong> ${data.avg_score.toFixed(2)}</div>
+                        <div><strong>Max Score:</strong> ${data.max_score.toFixed(2)}</div>
+                        <div><strong>Times Blocked:</strong> ${data.times_blocked}</div>
+                    </div>
+                    <div><strong>Techniques:</strong> ${data.techniques_used.join(', ')}</div>
+                    <hr style="margin:1rem 0;border-color:var(--border)">
+                    <h4>Timeline</h4>
+                    <table style="margin-top:0.5rem"><thead><tr><th>Time</th><th>Score</th><th>Reason</th></tr></thead><tbody>
+                        ${data.timeline.map(t => `<tr><td>${t.timestamp}</td><td>${t.score.toFixed(2)}</td><td>${t.reason}</td></tr>`).join('')}
+                    </tbody></table>
+                    <button class="btn btn-primary" style="margin-top:1rem;width:100%" onclick="alert('Block/Unblock functionality')">Block/Unblock</button>
+                `;
+                document.getElementById('ipDrawer').classList.add('open');
+                document.getElementById('overlay').classList.add('open');
+            } catch (e) { showToast('Error loading IP history', 'error'); }
+        }
+
+        function closeIpDrawer() {
+            document.getElementById('ipDrawer').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Settings panel
+        function togglePanel(panel) {
+            const sidebar = document.getElementById('settingsSidebar');
+            sidebar.classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
+            if (sidebar.classList.contains('open')) loadWhitelist();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsSidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Slider handlers
+        ['failedConn', 'portScan', 'traffic', 'lstm', 'block', 'ml'].forEach(prefix => {
+            document.getElementById(prefix + 'Slider').addEventListener('input', (e) => {
+                document.getElementById(prefix + 'Val').textContent = e.target.value;
+            });
+        });
+
+        async function saveConfig() {
+            try {
+                const config = {
+                    failed_conn_threshold: parseInt(document.getElementById('failedConnSlider').value),
+                    port_scan_threshold: parseInt(document.getElementById('portScanSlider').value),
+                    traffic_volume_threshold: parseInt(document.getElementById('trafficSlider').value),
+                    lstm_anomaly_score: parseFloat(document.getElementById('lstmSlider').value),
+                    block_duration: parseInt(document.getElementById('blockSlider').value),
+                    ml_weight: parseFloat(document.getElementById('mlSlider').value)
+                };
+                await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(config) });
+                showToast('Configuration saved!', 'success');
+            } catch (e) { showToast('Error saving config', 'error'); }
+        }
+
+        async function resetConfig() {
+            await fetch('/api/adaptation/reset', { method: 'POST' });
+            loadConfig();
+            showToast('Configuration reset to defaults', 'success');
+        }
+
+        // Whitelist functions
+        async function addToWhitelist() {
+            const ip = document.getElementById('whitelistIp').value;
+            const note = document.getElementById('whitelistNote').value;
+            if (!ip) { showToast('Please enter an IP', 'error'); return; }
+            try {
+                await fetch('/api/whitelist/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ip, note}) });
+                showToast('IP added to whitelist', 'success');
+                document.getElementById('whitelistIp').value = '';
+                document.getElementById('whitelistNote').value = '';
+                loadWhitelist();
+            } catch (e) { showToast('Error adding to whitelist', 'error'); }
+        }
+
+        async function removeFromWhitelist(ip) {
+            if (!confirm(`Remove ${ip} from whitelist?`)) return;
+            try {
+                await fetch('/api/whitelist/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ip}) });
+                showToast('IP removed from whitelist', 'success');
+                loadWhitelist();
+            } catch (e) { showToast('Error removing from whitelist', 'error'); }
+        }
+
+        async function togglePlaybook(name) {
+            await fetch(`/api/playbooks/${name}/toggle`, { method: 'POST' });
+            loadPlaybooks();
+        }
+
+        // Asset functions
+        function showAddAssetModal() {
+            document.getElementById('assetIpEdit').value = '';
+            document.getElementById('assetIp').value = '';
+            document.getElementById('assetHostname').value = '';
+            document.getElementById('assetOwner').value = '';
+            document.getElementById('assetModal').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+        }
+
+        function editAsset(ip) {
+            const asset = assets.find(a => a.ip === ip);
+            document.getElementById('assetIpEdit').value = ip;
+            document.getElementById('assetIp').value = asset.ip;
+            document.getElementById('assetHostname').value = asset.hostname || '';
+            document.getElementById('assetOwner').value = asset.owner || '';
+            document.getElementById('assetType').value = asset.asset_type || 'server';
+            document.getElementById('assetCriticality').value = asset.criticality || 'low';
+            document.getElementById('assetModal').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+        }
+
+        async function saveAsset() {
+            const ip = document.getElementById('assetIp').value;
+            const data = {
+                hostname: document.getElementById('assetHostname').value,
+                owner: document.getElementById('assetOwner').value,
+                asset_type: document.getElementById('assetType').value,
+                criticality: document.getElementById('assetCriticality').value
+            };
+            const editIp = document.getElementById('assetIpEdit').value;
+            try {
+                if (editIp) {
+                    await fetch(`/api/assets/${editIp}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                } else {
+                    await fetch('/api/assets', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ip, ...data}) });
+                }
+                showToast('Asset saved', 'success');
+                closeAssetModal();
+                loadAssets();
+            } catch (e) { showToast('Error saving asset', 'error'); }
+        }
+
+        async function deleteAsset(ip) {
+            if (!confirm(`Delete asset ${ip}?`)) return;
+            await fetch(`/api/assets/${ip}`, { method: 'DELETE' });
+            showToast('Asset deleted', 'success');
+            loadAssets();
+        }
+
+        function closeAssetModal() {
+            document.getElementById('assetModal').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Explain modal
+        async function showExplain(eventId) {
+            try {
+                const res = await fetch(`/api/explain/${eventId}`);
+                const data = await res.json();
+                if (data.error) { showToast(data.error, 'error'); return; }
+                document.getElementById('explainContent').innerHTML = `
+                    <p style="margin-bottom:1rem">${data.explanation}</p>
+                    <div style="display:grid;gap:0.5rem">
+                        ${Object.entries(data.shap_values || {}).map(([feature, value]) => `
+                            <div style="display:flex;align-items:center;gap:0.5rem">
+                                <span style="width:150px;font-size:0.85rem">${feature}</span>
+                                <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${Math.abs(value) * 100}%;background:${value > 0 ? 'var(--red)' : 'var(--blue)'}"></div></div>
+                                <span style="width:50px;text-align:right;font-size:0.75rem">${value.toFixed(3)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                document.getElementById('explainModal').classList.add('open');
+                document.getElementById('overlay').classList.add('open');
+            } catch (e) { showToast('Error loading explanation', 'error'); }
+        }
+
+        function closeExplain() {
+            document.getElementById('explainModal').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Case detail modal
+        async function showCaseDetail(caseId) {
+            const c = cases.find(x => x.id === caseId);
+            if (!c) return;
+            document.getElementById('caseDetailContent').innerHTML = `
+                <div style="margin-bottom:1rem">
+                    <span class="badge ${getSeverityBadge(c.severity)}">${c.severity}</span>
+                    <span class="badge ${c.status === 'open' ? 'badge-blue' : 'badge-green'}">${c.status}</span>
+                </div>
+                <p><strong>Title:</strong> ${c.title}</p>
+                <p><strong>IP:</strong> ${c.src_ip}</p>
+                <p><strong>Created:</strong> ${c.created_at}</p>
+                <hr style="margin:1rem 0;border-color:var(--border)">
+                <h4>Notes</h4>
+                <textarea class="form-input" id="caseNoteInput" rows="3" placeholder="Add a note..."></textarea>
+                <button class="btn" onclick="addCaseNote('${c.id}')" style="margin-top:0.5rem">Add Note</button>
+                <div style="margin-top:1rem;max-height:200px;overflow-y:auto">
+                    ${(c.analyst_notes || []).map(n => `<div style="padding:0.5rem;border-bottom:1px solid var(--border)">${n}</div>`).join('')}
+                </div>
+                <hr style="margin:1rem 0;border-color:var(--border)">
+                <h4>Status</h4>
+                <select class="form-input" id="caseStatusSelect" onchange="updateCaseStatus('${c.id}')">
+                    <option value="open" ${c.status === 'open' ? 'selected' : ''}>Open</option>
+                    <option value="investigating" ${c.status === 'investigating' ? 'selected' : ''}>Investigating</option>
+                    <option value="resolved" ${c.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                    <option value="false_positive" ${c.status === 'false_positive' ? 'selected' : ''}>False Positive</option>
+                </select>
+                <button class="btn" style="margin-top:1rem;width:100%" onclick="alert('View Incident Timeline')">View Incident Timeline</button>
+            `;
+            document.getElementById('caseModal').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+        }
+
+        async function addCaseNote(caseId) {
+            const note = document.getElementById('caseNoteInput').value;
+            if (!note) return;
+            await fetch(`/api/cases/${caseId}/note`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({note}) });
+            document.getElementById('caseNoteInput').value = '';
+            showCaseDetail(caseId);
+        }
+
+        async function updateCaseStatus(caseId) {
+            const status = document.getElementById('caseStatusSelect').value;
+            await fetch(`/api/cases/${caseId}/status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status}) });
+            loadCases();
+            closeCaseModal();
+        }
+
+        function closeCaseModal() {
+            document.getElementById('caseModal').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Chat functions
+        function toggleChat() {
+            document.getElementById('chatPanel').classList.toggle('open');
+        }
+
+        async function sendChat(msg) {
+            const message = msg || document.getElementById('chatInput').value;
+            if (!message) return;
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML += `<div class="chat-message chat-user">${escapeHtml(message)}</div>`;
+            document.getElementById('chatInput').value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message}) });
+                const data = await res.json();
+                messagesDiv.innerHTML += `<div class="chat-message chat-ai">${escapeHtml(data.reply)}</div>`;
+            } catch (e) {
+                messagesDiv.innerHTML += `<div class="chat-message chat-ai" style="color:var(--amber)">Error: ${e.message}</div>`;
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Threat Hunt
+        function addFilterRow() {
+            const container = document.getElementById('filtersContainer');
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:0.5rem;margin-bottom:0.5rem';
+            row.innerHTML = `
+                <select class="form-input filter-field" style="width:150px">
+                    <option value="src_ip">Source IP</option>
+                    <option value="dest_ip">Dest IP</option>
+                    <option value="threat">Threat</option>
+                    <option value="mitre_technique">MITRE Technique</option>
+                    <option value="mitre_tactic">MITRE Tactic</option>
+                    <option value="reason_contains">Reason Contains</option>
+                </select>
+                <select class="form-input filter-op" style="width:100px">
+                    <option value="eq">=</option>
+                    <option value="contains">contains</option>
+                    <option value="gt">&gt;</option>
+                    <option value="lt">&lt;</option>
+                </select>
+                <input type="text" class="form-input filter-value" style="flex:1" placeholder="Value">
+                <button class="btn" onclick="this.parentElement.remove()" style="color:var(--red)">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        async function runHunt() {
+            const filters = {};
+            document.querySelectorAll('#filtersContainer > div').forEach(row => {
+                const field = row.querySelector('.filter-field').value;
+                const op = row.querySelector('.filter-op').value;
+                const value = row.querySelector('.filter-value').value;
+                if (value) filters[field] = {op, value};
+            });
+            const timeRange = document.getElementById('timeRange').value;
+            
+            try {
+                const res = await fetch('/api/hunt', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({filters, time_range: timeRange, limit: 100}) });
+                const data = await res.json();
+                document.getElementById('huntResults').innerHTML = `
+                    <div style="margin-bottom:1rem">Found ${data.total} events in ${data.execution_time_ms}ms</div>
+                    <table><thead><tr><th>Time</th><th>Source IP</th><th>Score</th><th>Reason</th></tr></thead><tbody>
+                        ${data.results.map(e => `<tr><td>${e.timestamp}</td><td>${e.src_ip}</td><td>${e.hybrid_score.toFixed(2)}</td><td>${e.reason}</td></tr>`).join('')}
+                    </tbody></table>
+                `;
+            } catch (e) { showToast('Error running hunt', 'error'); }
+        }
+
+        // Logs modal
+        function openLogs() {
+            document.getElementById('logsModal').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+            loadLogs();
+        }
+
+        function closeLogs() {
+            document.getElementById('logsModal').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        async function loadLogs() {
+            const file = document.getElementById('logFileSelect').value;
+            try {
+                const res = await fetch(`/api/logs?file=${file}&lines=100`);
+                const data = await res.json();
+                const viewer = document.getElementById('logViewer');
+                viewer.innerHTML = data.lines.map((line, i) => {
+                    const isError = line.toLowerCase().includes('error') || line.toLowerCase().includes('critical');
+                    const isWarning = line.toLowerCase().includes('warning') || line.toLowerCase().includes('warn');
+                    return `<div class="log-line ${isError ? 'error' : isWarning ? 'warning' : ''}"><span style="color:var(--text-secondary)">[${String(i+1).padStart(3,'0')}]</span> ${escapeHtml(line)}</div>`;
+                }).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        function filterLogs() {
+            const term = document.getElementById('logSearch').value.toLowerCase();
+            document.querySelectorAll('#logViewer .log-line').forEach(line => {
+                line.style.display = line.textContent.toLowerCase().includes(term) ? 'block' : 'none';
+            });
+        }
+
+        // Alerts modal
+        async function openAlerts() {
+            document.getElementById('alertsModal').classList.add('open');
+            document.getElementById('overlay').classList.add('open');
+            try {
+                const res = await fetch('/api/alerts?limit=50');
+                const alerts = await res.json();
+                const tbody = document.querySelector('#alertsTable tbody');
+                tbody.innerHTML = alerts.map(a => `
+                    <tr style="${!a.read ? 'border-left:3px solid var(--blue)' : ''}">
+                        <td>${a.timestamp}</td>
+                        <td><span class="badge ${getSeverityBadge(a.severity)}">${a.severity}</span></td>
+                        <td>${a.ip || '-'}</td>
+                        <td>${a.message}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('alertBadge').textContent = '0';
+            } catch (e) { console.error(e); }
+        }
+
+        function closeAlerts() {
+            document.getElementById('alertsModal').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+        }
+
+        // Export functions
+        function exportCSV() {
+            window.location.href = '/api/export/csv';
+            showToast('CSV download started', 'success');
+        }
+
+        function exportPDF() {
+            window.location.href = '/api/export/pdf';
+            showToast('PDF download started', 'success');
+        }
+
+        // Utility functions
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.borderColor = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--border)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getScoreBadge(score) {
+            if (score >= 0.8) return 'badge-red';
+            if (score >= 0.5) return 'badge-amber';
+            if (score >= 0.3) return 'badge-blue';
+            return 'badge-green';
+        }
+
+        function getLevelBadge(level) {
+            if (level === 'CRITICAL') return 'badge-red';
+            if (level === 'HIGH') return 'badge-amber';
+            if (level === 'MEDIUM') return 'badge-blue';
+            return 'badge-green';
+        }
+
+        function getRiskColor(score) {
+            if (score >= 70) return 'var(--red)';
+            if (score >= 40) return 'var(--amber)';
+            if (score >= 20) return 'var(--blue)';
+            return 'var(--green)';
+        }
+
+        function getTrustBadge(level) {
+            if (level === 'malicious') return 'badge-red';
+            if (level === 'suspicious') return 'badge-amber';
+            if (level === 'neutral') return 'badge-blue';
+            return 'badge-green';
+        }
+
+        function getCriticalityBadge(level) {
+            if (level === 'critical') return 'badge-red';
+            if (level === 'high') return 'badge-amber';
+            if (level === 'medium') return 'badge-blue';
+            return 'badge-green';
+        }
+
+        function getSeverityBadge(severity) {
+            if (severity === 'critical') return 'badge-red';
+            if (severity === 'high') return 'badge-amber';
+            if (severity === 'medium') return 'badge-blue';
+            return 'badge-green';
+        }
+
+        function updateBadges() {
+            const today = new Date().toISOString().slice(0, 10);
+            const correlatedToday = events.filter(e => e.correlated && e.timestamp.startsWith(today)).length;
+            const openCases = cases.filter(c => c.status === 'open').length;
+            document.getElementById('correlatedBadge').textContent = correlatedToday;
+            document.getElementById('casesBadge').textContent = openCases;
+        }
+
+        function filterByTactic(tactic) {
+            switchTab('events');
+            showToast(`Filtering by tactic: ${tactic}`, 'info');
+        }
+    </script>
+</body>
+</html>

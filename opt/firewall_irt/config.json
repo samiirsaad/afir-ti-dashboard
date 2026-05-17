@@ -1,0 +1,9 @@
+{
+  "failed_conn_threshold": 10,
+  "port_scan_threshold": 50,
+  "traffic_volume_threshold": 10000,
+  "lstm_anomaly_score": 0.5,
+  "block_duration": 3600,
+  "ml_weight": 0.5,
+  "anthropic_key": ""
+}

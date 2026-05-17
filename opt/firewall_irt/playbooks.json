@@ -1,0 +1,45 @@
+{
+  "brute_force_playbook": {
+    "name": "Brute Force Response",
+    "description": "Automated response to brute force attacks",
+    "trigger": {
+      "reason_contains": [
+        "failed connections",
+        "brute"
+      ],
+      "score_min": 0.7
+    },
+    "actions": [
+      "block_ip",
+      "create_case",
+      "send_alert"
+    ],
+    "enabled": true
+  },
+  "port_scan_playbook": {
+    "name": "Port Scan Response",
+    "description": "Automated response to port scanning",
+    "trigger": {
+      "mitre_technique": "T1046"
+    },
+    "actions": [
+      "block_ip",
+      "create_case",
+      "tag_entity"
+    ],
+    "enabled": true
+  },
+  "critical_score_playbook": {
+    "name": "Critical Threat Response",
+    "description": "Maximum response for critical threats",
+    "trigger": {
+      "score_min": 0.9
+    },
+    "actions": [
+      "block_ip_24h",
+      "create_critical_case",
+      "alert_all_channels"
+    ],
+    "enabled": true
+  }
+}
